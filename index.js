@@ -1,45 +1,47 @@
-import jsonfile from "jsonfile";
-import moment from "moment";
-import simpleGit from "simple-git";
-import random from "random";
+name: Node.js Setup and Deployment
 
-const git = simpleGit();
-const path = "./data.json";
+on:
+  push:
+    branches:
+      - main
+      
+  workflow_dispatch:
+    inputs:
+      your-input-name:
+        description: 'Your input description'
+        required: false
 
-let counter = 0;
 
-// Helper: get random date between two dates
-function getRandomDate(start, end) {
-  const startDate = new Date(start).getTime();
-  const endDate = new Date(end).getTime();
-  const randomTime = random.int(startDate, endDate);
-  return moment(randomTime).format();
-}
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-async function makeCommits(n, batchSize = 1000) {
-  for (let i = 0; i < n; i++) {
-    counter++;
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - name: Install Git
+        run: |
+          sudo apt-get update && sudo apt-get install git
+      - name: Install dependencies
+        run: |
+          npm install moment simple-git random jsonfile
 
-    
-    const date = getRandomDate("2016-07-14", "2026-01-07");
 
-    const data = { date };
-    await jsonfile.writeFile(path, data);
 
-    await git.add([path]);
-    await git.commit(`Commit #${counter}`, [path], { "--date": date });
+      - name: Configure Git
+        run: |
+          git config --global user.name "livebigonga"
+          git config --global user.email "doyoulivebigboobs@gmail.com"
 
-    // Push only every batch
-    if (counter % batchSize === 0) {
-      console.log(`Pushing after ${counter} commits...`);
-      await git.push("origin", "main", ["--force"]);
-    }
-  }
+      - name: Push changes
+        run: |
+          git push -f origin main
 
-  // Final push at the end
-  console.log("Final push...");
-  await git.push("origin", "main", ["--force"]);
-  console.log("All commits done!");
-}
-
-makeCommits(4735);
+      - name: Run Node.js script
+        run: |
+          node index.js
+ 
